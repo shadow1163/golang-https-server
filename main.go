@@ -11,7 +11,7 @@ import (
 )
 
 // Not use
-const maxUploadSize = 2 * 1024 // 2 mb
+// const maxUploadSize = 2 * 1024 // 2 mb
 const uploadPath = "/var/www/html/Downloads"
 
 func main() {
@@ -27,7 +27,7 @@ func main() {
 func uploadFileHandler() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate file size
-		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
+		// r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 		//if err := r.ParseMultipartForm(maxUploadSize); err != nil {
 		//	renderError(w, "FILE_TOO_BIG", http.StatusBadRequest)
 		//	return
@@ -37,12 +37,14 @@ func uploadFileHandler() http.HandlerFunc {
 		//fileType := r.PostFormValue("type")
 		file, handler, err := r.FormFile("uploadFile")
 		if err != nil {
+			log.Println(err)
 			renderError(w, "INVALID_FILE", http.StatusBadRequest)
 			return
 		}
 		defer file.Close()
 		fileBytes, err := ioutil.ReadAll(file)
 		if err != nil {
+			log.Println(err)
 			renderError(w, "INVALID_FILE", http.StatusBadRequest)
 			return
 		}
@@ -70,11 +72,13 @@ func uploadFileHandler() http.HandlerFunc {
 		// write file
 		newFile, err := os.Create(newPath)
 		if err != nil {
+			log.Println(err)
 			renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
 			return
 		}
 		defer newFile.Close() // idempotent, okay to call twice
 		if _, err := newFile.Write(fileBytes); err != nil || newFile.Close() != nil {
+			log.Println(err)
 			renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
 			return
 		}
