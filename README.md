@@ -11,10 +11,10 @@ docker run -d --name upload-server --restart always -p 80:80 -p 9999:9999 -v $PW
 ```
 
 ## Upload file
-Open a browser and input http://<your server ip>:<port>/Downloads
+Open a browser and input http://your-server-ip:port/Downloads
 
 ## Download file
-Open a browser and input http://<your server ip>:<port>/upload.html
+Open a browser and input http://your-server-ip:port/upload.html
 
 # to-do list
 - Enable HTTPS
