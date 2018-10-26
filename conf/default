@@ -52,7 +52,7 @@ server {
 		autoindex on;
 	}
 	location /fileupload {
-		proxy_pass		http://$host:9999/upload;
+		proxy_pass		http://127.0.0.1:9999/upload;
 	}
 
 	# pass PHP scripts to FastCGI server
@@ -93,3 +93,4 @@ server {
 #		try_files $uri $uri/ =404;
 #	}
 #}
+client_max_body_size 200M;
