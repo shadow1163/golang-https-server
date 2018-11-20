@@ -11,16 +11,18 @@ import (
 )
 
 const maxUploadSize = 200 * 1024 * 1024 // 200 mb
-const uploadPath = "/var/www/html/Downloads"
+const uploadPath = "/server/files/"
+const appFolder = "/server"
 
 func main() {
 	http.HandleFunc("/upload", uploadFileHandler())
 
 	fs := http.FileServer(http.Dir(uploadPath))
-	http.Handle("/files/", http.StripPrefix("/files", fs))
+	http.Handle("/files/", http.StripPrefix("/files/", fs))
+	http.Handle("/", http.FileServer(http.Dir(appFolder)))
 
-	log.Print("Server started on localhost:9999, use /upload for uploading files and /files/{fileName} for downloading")
-	log.Fatal(http.ListenAndServe(":9999", nil))
+	log.Print("Server started on localhost:80, use /upload for uploading files and /files/{fileName} for downloading")
+	log.Fatal(http.ListenAndServe(":80", nil))
 }
 
 func uploadFileHandler() http.HandlerFunc {

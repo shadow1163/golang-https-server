@@ -4,22 +4,14 @@ MAINTAINER shadow1163 (674602286@qq.com)
 
 RUN apt-get update && apt-get install -y software-properties-common
 
-RUN add-apt-repository -y ppa:gophers/archive
+RUN add-apt-repository -y ppa:longsleep/golang-backports
 
-RUN apt-get update && apt-get install -y golang-1.10-go golang-1.10-doc nginx
+RUN apt-get update && apt-get install -y golang
 
-RUN ln -s /usr/lib/go-1.10/bin/go /usr/bin/go
+COPY server /server
 
-COPY main.go /main.go
+RUN mkdir /server/files
 
-COPY conf/default /etc/nginx/sites-available/
+EXPOSE 80
 
-RUN mkdir /var/www/html/Downloads
-
-COPY upload.html /var/www/html/
-
-RUN rm -f /var/www/html/index.nginx-debian.html
-
-EXPOSE 80 9999
-
-CMD /etc/init.d/nginx restart && go run /main.go
+CMD go run /server/main.go
