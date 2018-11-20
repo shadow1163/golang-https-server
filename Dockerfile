@@ -18,6 +18,8 @@ RUN mkdir /var/www/html/Downloads
 
 COPY upload.html /var/www/html/
 
+RUN rm -f /var/www/html/index.nginx-debian.html
+
 EXPOSE 80 9999
 
 CMD /etc/init.d/nginx restart && go run /main.go

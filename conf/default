@@ -50,6 +50,8 @@ server {
 		# as directory, then fall back to displaying a 404.
 		try_files $uri $uri/ =404;
 		autoindex on;
+		autoindex_exact_size off;
+		autoindex_localtime off;
 	}
 	location /fileupload {
 		proxy_pass		http://127.0.0.1:9999/upload;

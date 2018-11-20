@@ -10,8 +10,7 @@ import (
 	"path/filepath"
 )
 
-// Not use
-// const maxUploadSize = 2 * 1024 // 2 mb
+const maxUploadSize = 200 * 1024 * 1024 // 200 mb
 const uploadPath = "/var/www/html/Downloads"
 
 func main() {
@@ -27,11 +26,11 @@ func main() {
 func uploadFileHandler() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate file size
-		// r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
-		//if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-		//	renderError(w, "FILE_TOO_BIG", http.StatusBadRequest)
-		//	return
-		//}
+		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
+		if err := r.ParseMultipartForm(maxUploadSize); err != nil {
+			renderError(w, "FILE_TOO_BIG", http.StatusBadRequest)
+			return
+		}
 
 		// parse and validate file and post parameters
 		//fileType := r.PostFormValue("type")
