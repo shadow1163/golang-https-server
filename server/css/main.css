@@ -1,0 +1,30 @@
+#wrapper {
+  margin-right: auto;
+  margin-left: auto;
+  width: 100%;
+}
+#header {
+  margin-right: 1px;
+  margin-left: 1px;
+  width: 100%;
+  background-color: #779307;
+}
+#content {
+  margin-right: 1px;
+  margin-left: 1px;
+  width: 100%;
+  background-color: #dedede;
+}
+
+body {
+       background-color: grey;
+   }
+   @media screen and (max-width: 768px) {
+       body {
+           background-color: green;
+       }
+   }
+
+a {
+  font-size: 300%
+}

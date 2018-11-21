@@ -12,13 +12,19 @@ import (
 
 const maxUploadSize = 200 * 1024 * 1024 // 200 mb
 const uploadPath = "/server/files/"
+const jsPath = "/server/js/"
+const cssPath = "/server/css/"
 const appFolder = "/server"
 
 func main() {
 	http.HandleFunc("/upload", uploadFileHandler())
 
 	fs := http.FileServer(http.Dir(uploadPath))
+	jsfs := http.FileServer(http.Dir(jsPath))
+	cssfs := http.FileServer(http.Dir(cssPath))
 	http.Handle("/files/", http.StripPrefix("/files/", fs))
+	http.Handle("/js/", http.StripPrefix("/js/", jsfs))
+	http.Handle("/css/", http.StripPrefix("/css/", cssfs))
 	http.Handle("/", http.FileServer(http.Dir(appFolder)))
 
 	log.Print("Server started on localhost:80, use /upload for uploading files and /files/{fileName} for downloading")
