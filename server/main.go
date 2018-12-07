@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -16,6 +17,10 @@ const jsPath = "/server/js/"
 const cssPath = "/server/css/"
 const appFolder = "/server"
 
+type lFile struct {
+	Flist []os.FileInfo
+}
+
 func main() {
 	http.HandleFunc("/upload", uploadFileHandler())
 
@@ -25,10 +30,23 @@ func main() {
 	http.Handle("/files/", http.StripPrefix("/files/", fs))
 	http.Handle("/js/", http.StripPrefix("/js/", jsfs))
 	http.Handle("/css/", http.StripPrefix("/css/", cssfs))
-	http.Handle("/", http.FileServer(http.Dir(appFolder)))
+	http.Handle("/", indexPageHandler())
 
 	log.Print("Server started on localhost:80, use /upload for uploading files and /files/{fileName} for downloading")
 	log.Fatal(http.ListenAndServe(":80", nil))
+}
+
+func indexPageHandler() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tmpl := template.Must(template.ParseFiles("/server/index.html"))
+		files, err := ioutil.ReadDir(uploadPath)
+		if err != nil {
+			renderError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		sfile := lFile{Flist: files}
+		tmpl.Execute(w, sfile)
+	})
 }
 
 func uploadFileHandler() http.HandlerFunc {

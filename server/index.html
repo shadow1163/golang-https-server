@@ -9,14 +9,16 @@
   <body onload="updateSize();">
     <div id="wrapper">
       <div id="header">
-        <a href="/files">Browser Files</a>
-      </div>
-      <div id="content">
         <form enctype="multipart/form-data" name="uploadForm" method="post" action="/upload">
           <input id="uploadFile" type="file" name="uploadFile" onchange="updateSize();"> selected files: <span id="fileNum">0</span>; total size: <span id="fileSize">0</span>
           <input type="hidden" name="token" value="{{.}}"/>
           <input type="submit" value="upload" />
         </form>
+        <div id="content">
+          {{range .Flist}}
+            <a href="/files/{{.Name}}">{{.Name}}</a><br>
+          {{end}}
+        </div>
       </div>
     </div>
   </body>
