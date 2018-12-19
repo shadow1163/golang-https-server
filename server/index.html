@@ -14,11 +14,11 @@
           <input type="hidden" name="token" value="{{.}}"/>
           <input type="submit" value="upload" />
         </form>
-        <div id="content">
-          {{range .Flist}}
-            <a href="/files/{{.Name}}">{{.Name}}</a><br>
-          {{end}}
-        </div>
+      </div>
+      <div id="content">
+        {{range .Flist}}
+          <a href="/files/{{.Name}}">{{.Name}}</a><br>
+        {{end}}
       </div>
     </div>
   </body>
