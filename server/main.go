@@ -30,10 +30,17 @@ func main() {
 	http.Handle("/files/", http.StripPrefix("/files/", fs))
 	http.Handle("/js/", http.StripPrefix("/js/", jsfs))
 	http.Handle("/css/", http.StripPrefix("/css/", cssfs))
+	http.Handle("/key/", keyTestPageHandler())
 	http.Handle("/", indexPageHandler())
 
 	log.Print("Server started on localhost:80, use /upload for uploading files and /files/{fileName} for downloading")
 	log.Fatal(http.ListenAndServe(":80", nil))
+}
+
+func keyTestPageHandler() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "/server/key.html")
+	})
 }
 
 func indexPageHandler() http.HandlerFunc {
