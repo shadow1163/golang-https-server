@@ -12,6 +12,6 @@ COPY server /server
 
 RUN mkdir /server/files
 
-EXPOSE 80
+EXPOSE 80 443
 
 CMD go run /server/main.go

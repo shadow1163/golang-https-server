@@ -21,20 +21,35 @@ type lFile struct {
 	Flist []os.FileInfo
 }
 
-func main() {
-	http.HandleFunc("/upload", uploadFileHandler())
+func redirect(w http.ResponseWriter, req *http.Request) {
+	// remove/add not default ports from req.Host
+	target := "https://" + req.Host + req.URL.Path
+	if len(req.URL.RawQuery) > 0 {
+		target += "?" + req.URL.RawQuery
+	}
+	log.Printf("redirect to: %s", target)
+	http.Redirect(w, req, target,
+		// see @andreiavrammsd comment: often 307 > 301
+		http.StatusTemporaryRedirect)
+}
 
+func main() {
+	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir(uploadPath))
 	jsfs := http.FileServer(http.Dir(jsPath))
 	cssfs := http.FileServer(http.Dir(cssPath))
-	http.Handle("/files/", http.StripPrefix("/files/", fs))
-	http.Handle("/js/", http.StripPrefix("/js/", jsfs))
-	http.Handle("/css/", http.StripPrefix("/css/", cssfs))
-	http.Handle("/key/", keyTestPageHandler())
-	http.Handle("/", indexPageHandler())
 
-	log.Print("Server started on localhost:80, use /upload for uploading files and /files/{fileName} for downloading")
-	log.Fatal(http.ListenAndServe(":80", nil))
+	mux.Handle("/files/", http.StripPrefix("/files/", fs))
+	mux.Handle("/js/", http.StripPrefix("/js/", jsfs))
+	mux.Handle("/css/", http.StripPrefix("/css/", cssfs))
+
+	mux.HandleFunc("/upload", uploadFileHandler())
+	mux.Handle("/key/", keyTestPageHandler())
+	mux.Handle("/", indexPageHandler())
+
+	log.Print("Server started on localhost:80/443, use /upload for uploading files and /files/{fileName} for downloading")
+	go http.ListenAndServe(":80", http.HandlerFunc(redirect))
+	http.ListenAndServeTLS(":443", "/server/cert.pem", "/server/key.pem", mux)
 }
 
 func keyTestPageHandler() http.HandlerFunc {
