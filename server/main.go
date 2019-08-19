@@ -18,6 +18,7 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -44,6 +45,18 @@ type Note struct {
 	//2006-01-02T15:04:05.000Z
 	CreatedOn time.Time `json:"createdon"`
 }
+
+//Message message struct
+type Message struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Message  string `json:"message"`
+}
+
+var clients = make(map[*websocket.Conn]bool)
+var broadcast = make(chan Message)
+
+var upgrader = websocket.Upgrader{}
 
 //Store for the Notes collection
 var noteStore = make(map[string]Note)
@@ -299,6 +312,49 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func handleConnections(w http.ResponseWriter, r *http.Request) {
+	// Upgrade initial GET request to a websocket
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Make sure we close the connection when the function returns
+	defer ws.Close()
+	clients[ws] = true
+	for {
+		var msg Message
+		// Read in a new message as JSON and map it to a Message object
+		err := ws.ReadJSON(&msg)
+		if err != nil {
+			log.Printf("error: %v", err)
+			delete(clients, ws)
+			break
+		}
+		// Send the newly received message to the broadcast channel
+		broadcast <- msg
+	}
+}
+
+func handleMessages() {
+	for {
+		// Grab the next message from the broadcast channel
+		msg := <-broadcast
+		// Send it out to every client that is currently connected
+		for client := range clients {
+			err := client.WriteJSON(msg)
+			if err != nil {
+				log.Printf("error: %v", err)
+				client.Close()
+				delete(clients, client)
+			}
+		}
+	}
+}
+
+func chatroom(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "/server/chatroom.html")
+}
+
 func main() {
 	initCache()
 
@@ -307,9 +363,12 @@ func main() {
 	jsfs := http.FileServer(http.Dir(jsPath))
 	cssfs := http.FileServer(http.Dir(cssPath))
 
-	r.Handle("/files/", http.StripPrefix("/files/", fs))
-	r.Handle("/js/", http.StripPrefix("/js/", jsfs))
-	r.Handle("/css/", http.StripPrefix("/css/", cssfs))
+	// r.Handle("/files/", http.StripPrefix("/files/", fs))
+	// r.Handle("/js/", http.StripPrefix("/js/", jsfs))
+	// r.Handle("/css/", http.StripPrefix("/css/", cssfs))
+	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", fs))
+	r.PathPrefix("/js/").Handler(http.StripPrefix("/js/", jsfs))
+	r.PathPrefix("/css/").Handler(http.StripPrefix("/css/", cssfs))
 
 	r.HandleFunc("/upload", uploadFileHandler())
 	r.Handle("/key", keyTestPageHandler())
@@ -325,6 +384,12 @@ func main() {
 	r.HandleFunc("/signin", Signin)
 	r.HandleFunc("/welcome", Welcome)
 	r.HandleFunc("/refresh", Refresh)
+
+	//ChatRoom
+	r.HandleFunc("/chatroom", chatroom)
+	r.HandleFunc("/ws", handleConnections)
+
+	go handleMessages()
 
 	log.Print("Server started on localhost:80/443, use /upload for uploading files and /files/{fileName} for downloading")
 	go http.ListenAndServe(":80", http.HandlerFunc(redirect))
@@ -408,7 +473,7 @@ func uploadFileHandler() http.HandlerFunc {
 			renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
 			return
 		}
-		w.Write([]byte("SUCCESS"))
+		w.Write([]byte("<!DOCTYPE html><html><head> <meta http-equiv='refresh' content='5; URL=/'></head><body>SUCCESS<p></p><a href=/>Back to main page</a></body></html>"))
 	})
 }
 

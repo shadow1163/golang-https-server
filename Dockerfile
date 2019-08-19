@@ -8,7 +8,7 @@ RUN add-apt-repository -y ppa:longsleep/golang-backports
 
 RUN apt-get update && apt-get install -y golang git redis-server
 
-RUN go get github.com/gorilla/mux && go get github.com/gomodule/redigo/redis && go get github.com/satori/go.uuid
+RUN go get github.com/gorilla/mux && go get github.com/gomodule/redigo/redis && go get github.com/satori/go.uuid && go get github.com/gorilla/websocket
 
 COPY server /server
 
