@@ -8,19 +8,23 @@ RUN add-apt-repository -y ppa:longsleep/golang-backports
 
 RUN apt-get update && apt-get install -y golang git redis-server wget unzip
 
-RUN go get github.com/gorilla/mux && go get github.com/gomodule/redigo/redis && go get github.com/satori/go.uuid && go get github.com/gorilla/websocket && go get -u github.com/golang/protobuf/protoc-gen-go
+RUN go get github.com/gorilla/mux \
+    && go get github.com/gomodule/redigo/redis \
+    && go get github.com/satori/go.uuid \
+    && go get github.com/gorilla/websocket \
+    && go get -u github.com/golang/protobuf/protoc-gen-go
 
 RUN mkdir /root/go/src/google.golang.org \
-    && go get -u github.com/grpc/grpc-go \
+    && (go get -u github.com/grpc/grpc-go; exit 0) \
     && ln -s /root/go/src/github.com/grpc/grpc-go/ /root/go/src/google.golang.org/grpc \
-    && go get github.com/google/go-genproto \
+    && (go get github.com/google/go-genproto; exit 0) \
     && ln -s /root/go/src/github.com/google/go-genproto /root/go/src/google.golang.org/genproto \
     && go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 
 ## install protobuf
 RUN wget https://github.com/google/protobuf/releases/download/v3.9.1/protobuf-all-3.9.1.zip \
     && unzip protobuf-all-3.9.1.zip \
-    && cd protobuf-3.5.1/ \
+    && cd protobuf-3.9.1/ \
     && ./configure \
     && make \
     && make install \
