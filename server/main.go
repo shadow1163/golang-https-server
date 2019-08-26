@@ -43,7 +43,7 @@ type Note struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	//2006-01-02T15:04:05.000Z
-	CreatedOn time.Time `json:"createdon"`
+	// CreatedOn time.Time `json:"createdon"`
 }
 
 //Message message struct
@@ -115,8 +115,8 @@ func PutNoteHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	if note, ok := noteStore[k]; ok {
-		noteToUpd.CreatedOn = note.CreatedOn
+	if _, ok := noteStore[k]; ok {
+		// noteToUpd.CreatedOn = note.CreatedOn
 		//delete existing item and add the updated item
 		delete(noteStore, k)
 		noteStore[k] = noteToUpd
@@ -135,7 +135,7 @@ func PostNoteHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	note.CreatedOn = time.Now()
+	// note.CreatedOn = time.Now()
 	id++
 	k := strconv.Itoa(id)
 	noteStore[k] = note

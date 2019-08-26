@@ -1,0 +1,24 @@
+syntax = "proto3";
+option go_package = "note";
+
+package note;
+
+import "google/api/annotations.proto";
+
+// Message represents a simple message sent to the Echo service.
+message Message {
+	string title = 1;
+	string description = 2;
+}
+
+// Echo service responds to incoming echo requests.
+service NoteService {
+	// Echo method receives a simple message and returns it.
+	// The message posted as the id parameter will also be returned.
+	rpc Get(Message) returns (Message) {
+		option (google.api.http) = {
+			post: "/api/notes"
+			body: "*"
+		};
+	}
+}
