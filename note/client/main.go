@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	address     = "172.17.0.3:50051"
+	address     = "127.0.0.1:50051"
 	title       = "test"
 	description = "test123"
 )
@@ -24,9 +24,9 @@ func main() {
 	c := pb.NewNoteServiceClient(conn)
 
 	// Contact the server and print out its response.
-	r, err := c.Get(context.Background(), &pb.Message{Title: title, Description: description})
+	r, err := c.Get(context.Background(), &pb.Message{Id: "1", Title: title, Description: description})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
-	log.Printf("Geting: %s-%s", r.Title, r.Description)
+	log.Printf("Geting: %s-%s-%s", r.Id, r.Title, r.Description)
 }

@@ -43,6 +43,6 @@ COPY server /server
 
 RUN mkdir /server/files
 
-EXPOSE 80 443
+EXPOSE 80 443 50051
 
 CMD bash /server/start.sh

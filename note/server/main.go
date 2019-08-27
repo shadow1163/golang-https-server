@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -18,6 +19,7 @@ var (
 )
 
 type noteServer struct {
+	ID          int    `jsion:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 }
@@ -27,7 +29,22 @@ func newNoteServer() pb.NoteServiceServer {
 }
 
 func (s *noteServer) Get(ctx context.Context, msg *pb.Message) (*pb.Message, error) {
-	log.Println(msg)
+	log.Println(fmt.Sprintf("Get: %s", msg))
+	return msg, nil
+}
+
+func (s *noteServer) Post(ctx context.Context, msg *pb.Message) (*pb.Message, error) {
+	log.Println(fmt.Sprintf("Post: %s", msg))
+	return msg, nil
+}
+
+func (s *noteServer) Put(ctx context.Context, msg *pb.Message) (*pb.Message, error) {
+	log.Println(fmt.Sprintf("Put: %s", msg))
+	return msg, nil
+}
+
+func (s *noteServer) Delete(ctx context.Context, msg *pb.Message) (*pb.Message, error) {
+	log.Println(fmt.Sprintf("Delete: %s", msg))
 	return msg, nil
 }
 
