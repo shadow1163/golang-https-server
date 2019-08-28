@@ -6,6 +6,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"path"
+	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
@@ -48,6 +50,17 @@ func (s *noteServer) Delete(ctx context.Context, msg *pb.Message) (*pb.Message, 
 	return msg, nil
 }
 
+func serveSwagger(w http.ResponseWriter, r *http.Request) {
+	if !strings.HasSuffix(r.URL.Path, ".swagger.json") {
+		log.Println(fmt.Sprintf("Not found: %s", r.URL.Path))
+		http.NotFound(w, r)
+		return
+	}
+	p := strings.TrimPrefix(r.URL.Path, "/swagger/")
+	p = path.Join("proto", p)
+	http.ServeFile(w, r, p)
+}
+
 func main() {
 	listen, err := net.Listen("tcp", ":50051")
 	if err != nil {
@@ -68,5 +81,11 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	http.ListenAndServe(address, mux)
+	r := http.NewServeMux()
+	fs := http.FileServer(http.Dir("../swagger-ui"))
+
+	r.HandleFunc("/swagger/", serveSwagger)
+	r.Handle("/swaggerui/", http.StripPrefix("/swaggerui/", fs))
+	r.Handle("/", mux)
+	http.ListenAndServe(address, r)
 }

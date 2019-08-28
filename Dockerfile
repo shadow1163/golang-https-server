@@ -26,7 +26,8 @@ RUN mkdir /root/go/src/google.golang.org \
     && (go get github.com/golang/sys; exit 0) \
     && ln -s /root/go/src/github.com/golang/sys /root/go/src/golang.org/x/sys \
     && (go get github.com/golang/text; exit 0) \
-    && ln -s /root/go/src/github.com/golang/text /root/go/src/golang.org/x/text
+    && ln -s /root/go/src/github.com/golang/text /root/go/src/golang.org/x/text \
+    && go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
 
 ## install protobuf
