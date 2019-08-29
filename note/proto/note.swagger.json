@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/notes": {
+    "/gapi/notes": {
       "get": {
         "summary": "Echo method receives a simple message and returns it.\nThe message posted as the id parameter will also be returned.",
         "operationId": "Get",
@@ -23,7 +23,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/noteMessage"
+              "$ref": "#/definitions/noteMessageArray"
             }
           }
         },
@@ -76,7 +76,7 @@
         ]
       }
     },
-    "/api/notes/{id}": {
+    "/gapi/notes/{id}": {
       "delete": {
         "operationId": "Delete",
         "responses": {
@@ -158,6 +158,17 @@
         }
       },
       "description": "Message represents a simple message sent to the Echo service."
+    },
+    "noteMessageArray": {
+      "type": "object",
+      "properties": {
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/noteMessage"
+          }
+        }
+      }
     }
   }
 }

@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
 
@@ -74,18 +75,24 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	mux := runtime.NewServeMux()
+	muxS := runtime.NewServeMux()
 	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
-	err = pb.RegisterNoteServiceHandlerFromEndpoint(ctx, mux, noteEndpoint, dialOpts)
+	err = pb.RegisterNoteServiceHandlerFromEndpoint(ctx, muxS, noteEndpoint, dialOpts)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	r := http.NewServeMux()
-	fs := http.FileServer(http.Dir("../swagger-ui"))
+	// r := http.NewServeMux()
+	swaggerFs := http.FileServer(http.Dir("../swagger-ui"))
 
-	r.HandleFunc("/swagger/", serveSwagger)
-	r.Handle("/swaggerui/", http.StripPrefix("/swaggerui/", fs))
-	r.Handle("/", mux)
+	// r.HandleFunc("/swagger/", serveSwagger)
+	// r.Handle("/swaggerui/", http.StripPrefix("/swaggerui/", fs))
+	// r.Handle("/", mux)
+	// http.ListenAndServe(address, r)
+	r := mux.NewRouter().StrictSlash(false)
+	r.PathPrefix("/swagger/").Handler(http.HandlerFunc(serveSwagger))
+	r.PathPrefix("/swaggerui/").Handler(http.StripPrefix("/swaggerui/", swaggerFs))
+	r.PathPrefix("/").Handler(muxS)
+
 	http.ListenAndServe(address, r)
 }

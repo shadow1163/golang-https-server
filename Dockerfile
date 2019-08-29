@@ -42,6 +42,10 @@ RUN wget https://github.com/google/protobuf/releases/download/v3.9.1/protobuf-al
 
 COPY server /server
 
+COPY swagger-ui /swagger-ui
+
+COPY note /note
+
 RUN mkdir /server/files
 
 EXPOSE 80 443 50051

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -9,17 +10,21 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
+	pb "../note/proto"
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	uuid "github.com/satori/go.uuid"
+	"google.golang.org/grpc"
 )
 
 const maxUploadSize = 200 * 1024 * 1024 // 200 mb
@@ -40,10 +45,43 @@ type Credentials struct {
 
 // Note note struct
 type Note struct {
+	ID          string `jsion:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	//2006-01-02T15:04:05.000Z
-	// CreatedOn time.Time `json:"createdon"`
+	CreatedOn time.Time `json:"createdon"`
+}
+
+func newNote() pb.NoteServiceServer {
+	return new(Note)
+}
+
+// Get get all notes
+func (s *Note) Get(ctx context.Context, msg *pb.Message) (*pb.MessageArray, error) {
+	var messages []*pb.Message
+	for _, v := range noteStore {
+		message := &pb.Message{Id: v.ID, Title: v.Title, Description: v.Description}
+		messages = append(messages, message)
+	}
+	return &pb.MessageArray{Messages: messages}, nil
+}
+
+// Post post a note
+func (s *Note) Post(ctx context.Context, msg *pb.Message) (*pb.Message, error) {
+	log.Println(fmt.Sprintf("Post: %s", msg))
+	return msg, nil
+}
+
+// Put modify a known note
+func (s *Note) Put(ctx context.Context, msg *pb.Message) (*pb.Message, error) {
+	log.Println(fmt.Sprintf("Put: %s", msg))
+	return msg, nil
+}
+
+// Delete delete a note
+func (s *Note) Delete(ctx context.Context, msg *pb.Message) (*pb.Message, error) {
+	log.Println(fmt.Sprintf("Delete: %s", msg))
+	return msg, nil
 }
 
 //Message message struct
@@ -60,9 +98,6 @@ var upgrader = websocket.Upgrader{}
 
 //Store for the Notes collection
 var noteStore = make(map[string]Note)
-
-//Variable to generate key for the collection
-var id int
 
 var cache redis.Conn
 
@@ -115,8 +150,8 @@ func PutNoteHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	if _, ok := noteStore[k]; ok {
-		// noteToUpd.CreatedOn = note.CreatedOn
+	if note, ok := noteStore[k]; ok {
+		noteToUpd.CreatedOn = note.CreatedOn
 		//delete existing item and add the updated item
 		delete(noteStore, k)
 		noteStore[k] = noteToUpd
@@ -135,9 +170,8 @@ func PostNoteHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	// note.CreatedOn = time.Now()
-	id++
-	k := strconv.Itoa(id)
+	note.CreatedOn = time.Now()
+	k := note.ID
 	noteStore[k] = note
 
 	j, err := json.Marshal(note)
@@ -355,6 +389,17 @@ func chatroom(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "/server/chatroom.html")
 }
 
+func serveSwagger(w http.ResponseWriter, r *http.Request) {
+	if !strings.HasSuffix(r.URL.Path, ".swagger.json") {
+		log.Println(fmt.Sprintf("Not found: %s", r.URL.Path))
+		http.NotFound(w, r)
+		return
+	}
+	p := strings.TrimPrefix(r.URL.Path, "/swagger/")
+	p = path.Join("/note/proto/", p)
+	http.ServeFile(w, r, p)
+}
+
 func main() {
 	initCache()
 
@@ -388,6 +433,31 @@ func main() {
 	//ChatRoom
 	r.HandleFunc("/chatroom", chatroom)
 	r.HandleFunc("/ws", handleConnections)
+
+	//swagger files
+	swaggerFs := http.FileServer(http.Dir("/swagger-ui"))
+	r.PathPrefix("/swagger/").Handler(http.HandlerFunc(serveSwagger))
+	r.PathPrefix("/swaggerui/").Handler(http.StripPrefix("/swaggerui/", swaggerFs))
+
+	//handle grpc server
+	listen, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	server := grpc.NewServer()
+	pb.RegisterNoteServiceServer(server, newNote())
+	go server.Serve(listen)
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	muxS := runtime.NewServeMux()
+	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
+	err = pb.RegisterNoteServiceHandlerFromEndpoint(ctx, muxS, "localhost:50051", dialOpts)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	r.PathPrefix("/gapi/").Handler(muxS)
 
 	go handleMessages()
 

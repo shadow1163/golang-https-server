@@ -12,30 +12,34 @@ message Message {
 	string description = 3;
 }
 
+message MessageArray {
+    repeated Message messages = 1;
+}
+
 // Echo service responds to incoming echo requests.
 service NoteService {
 	// Echo method receives a simple message and returns it.
 	// The message posted as the id parameter will also be returned.
-	rpc Get(Message) returns (Message) {
+	rpc Get(Message) returns (MessageArray) {
 		option (google.api.http) = {
-			get: "/api/notes"
+			get: "/gapi/notes"
 		};
 	}
 	rpc Post(Message) returns (Message) {
 		option (google.api.http) = {
-			post: "/api/notes"
+			post: "/gapi/notes"
 			body: "*"
 		};
 	}
 	rpc Put(Message) returns (Message) {
 		option (google.api.http) = {
-			put: "/api/notes/{id}"
+			put: "/gapi/notes/{id}"
 			body: "*"
 		};
 	}
 	rpc Delete(Message) returns (Message) {
 		option (google.api.http) = {
-			delete: "/api/notes/{id}"
+			delete: "/gapi/notes/{id}"
 		};
 	}
 }
