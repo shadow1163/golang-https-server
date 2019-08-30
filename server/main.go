@@ -8,13 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -271,7 +271,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/uploadpage", 302)
 }
 
-// Welcome welcome page
+// UploadPage upload page
 func UploadPage(w http.ResponseWriter, r *http.Request) {
 	// We can obtain the session token from the requests cookies, which come with every request
 	c, err := r.Cookie("session_token")
@@ -356,6 +356,7 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 		Value:   newSessionToken,
 		Expires: time.Now().Add(120 * time.Second),
 	})
+	// log.Println(newSessionToken)
 	http.Redirect(w, r, "/uploadpage", 302)
 }
 
@@ -517,60 +518,91 @@ func indexPageHandler() http.HandlerFunc {
 func uploadFileHandler() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate file size
-		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
-		if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-			renderError(w, "FILE_TOO_BIG", http.StatusBadRequest)
-			return
-		}
+		// r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
+		// if err := r.ParseMultipartForm(maxUploadSize); err != nil {
+		// 	renderError(w, "FILE_TOO_BIG", http.StatusBadRequest)
+		// 	return
+		// }
 
 		// parse and validate file and post parameters
 		//fileType := r.PostFormValue("type")
-		file, handler, err := r.FormFile("uploadFile")
-		if err != nil {
-			log.Println(err)
-			renderError(w, "INVALID_FILE", http.StatusBadRequest)
-			return
-		}
-		defer file.Close()
-		fileBytes, err := ioutil.ReadAll(file)
-		if err != nil {
-			log.Println(err)
-			renderError(w, "INVALID_FILE", http.StatusBadRequest)
-			return
-		}
+		// file, handler, err := r.FormFile("uploadFile")
+		// if err != nil {
+		// 	log.Println(err)
+		// 	renderError(w, "INVALID_FILE", http.StatusBadRequest)
+		// 	return
+		// }
+		// defer file.Close()
+		// fileBytes, err := ioutil.ReadAll(file)
+		// if err != nil {
+		// 	log.Println(err)
+		// 	renderError(w, "INVALID_FILE", http.StatusBadRequest)
+		// 	return
+		// }
 
-		// check file type, detectcontenttype only needs the first 512 bytes
-		//filetype := http.DetectContentType(fileBytes)
-		//switch filetype {
-		//case "image/jpeg", "image/jpg":
-		//case "image/gif", "image/png":
-		//case "application/pdf":
-		//	break
-		//default:
-		//	renderError(w, "INVALID_FILE_TYPE", http.StatusBadRequest)
-		//	return
-		//}
-		//fileName := randToken(12)
-		//fileEndings, err := mime.ExtensionsByType(fileType)
-		//if err != nil {
-		//	renderError(w, "CANT_READ_FILE_TYPE", http.StatusInternalServerError)
-		//	return
-		//}
-		newPath := filepath.Join(uploadPath, handler.Filename)
-		fmt.Printf("File: %s\n", newPath)
+		// // check file type, detectcontenttype only needs the first 512 bytes
+		// //filetype := http.DetectContentType(fileBytes)
+		// //switch filetype {
+		// //case "image/jpeg", "image/jpg":
+		// //case "image/gif", "image/png":
+		// //case "application/pdf":
+		// //	break
+		// //default:
+		// //	renderError(w, "INVALID_FILE_TYPE", http.StatusBadRequest)
+		// //	return
+		// //}
+		// //fileName := randToken(12)
+		// //fileEndings, err := mime.ExtensionsByType(fileType)
+		// //if err != nil {
+		// //	renderError(w, "CANT_READ_FILE_TYPE", http.StatusInternalServerError)
+		// //	return
+		// //}
+		// newPath := filepath.Join(uploadPath, handler.Filename)
+		// fmt.Printf("File: %s\n", newPath)
 
-		// write file
-		newFile, err := os.Create(newPath)
+		// // write file
+		// newFile, err := os.Create(newPath)
+		// if err != nil {
+		// 	log.Println(err)
+		// 	renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
+		// 	return
+		// }
+		// defer newFile.Close() // idempotent, okay to call twice
+		// if _, err := newFile.Write(fileBytes); err != nil || newFile.Close() != nil {
+		// 	log.Println(err)
+		// 	renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
+		// 	return
+		// }
+		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
+		reader, err := r.MultipartReader()
+
 		if err != nil {
-			log.Println(err)
-			renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		defer newFile.Close() // idempotent, okay to call twice
-		if _, err := newFile.Write(fileBytes); err != nil || newFile.Close() != nil {
-			log.Println(err)
-			renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
-			return
+		//copy each part to destination.
+		for {
+			part, err := reader.NextPart()
+			if err == io.EOF {
+				break
+			}
+
+			//if part.FileName() is empty, skip this iteration.
+			if part.FileName() == "" {
+				continue
+			}
+			dst, err := os.Create(uploadPath + part.FileName())
+			defer dst.Close()
+
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if _, err := io.Copy(dst, part); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 		w.Write([]byte("<!DOCTYPE html><html><head> <meta http-equiv='refresh' content='5; URL=/uploadpage'></head><body>SUCCESS<p></p><a href=/uploadpage>Back to previous page</a></body></html>"))
 	})
