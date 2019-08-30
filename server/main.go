@@ -223,14 +223,16 @@ func BasicAuth(f func(http.ResponseWriter, *http.Request), user, passwd []byte) 
 
 // Signin sign in
 func Signin(w http.ResponseWriter, r *http.Request) {
-	var creds Credentials
+	// var creds Credentials
 	// Get the JSON body and decode into credentials
-	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil {
-		// If the structure of the body is wrong, return an HTTP error
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	//err := json.NewDecoder(r.Body).Decode(&creds)
+	//if err != nil {
+	// If the structure of the body is wrong, return an HTTP error
+	//	w.WriteHeader(http.StatusBadRequest)
+	//	return
+	//}
+	name := r.FormValue("username")
+	pass := r.FormValue("password")
 
 	// Get the expected password from our in memory map
 	// expectedPassword, ok := users[creds.Username]
@@ -238,8 +240,9 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	// If a password exists for the given user
 	// AND, if it is the same as the password we received, the we can move ahead
 	// if NOT, then we return an "Unauthorized" status
-	if creds.Username != string(user) || string(passwd) != creds.Password {
+	if name != string(user) || string(passwd) != pass {
 		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("<!DOCTYPE html><html><head> <meta http-equiv='refresh' content='5; URL=/'></head><body>Error 401<p></p><a href=/>Back to previous page</a></body></html>"))
 		return
 	}
 
@@ -247,13 +250,14 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	obj, _ := uuid.NewV4()
 	sessionToken := obj.String()
 	log.Println(sessionToken)
-	log.Println(creds.Username)
+	log.Println(name)
 	// Set the token in the cache, along with the user whom it represents
 	// The token has an expiry time of 120 seconds
-	_, err = cache.Do("SETEX", sessionToken, "120", creds.Username)
+	_, err := cache.Do("SETEX", sessionToken, "120", name)
 	if err != nil {
 		// If there is an error in setting the cache, return an internal server error
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("<!DOCTYPE html><html><head> <meta http-equiv='refresh' content='5; URL=/'></head><body>Error 500<p></p><a href=/>Back to previous page</a></body></html>"))
 		return
 	}
 
@@ -264,10 +268,11 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		Value:   sessionToken,
 		Expires: time.Now().Add(120 * time.Second),
 	})
+	http.Redirect(w, r, "/uploadpage", 302)
 }
 
 // Welcome welcome page
-func Welcome(w http.ResponseWriter, r *http.Request) {
+func UploadPage(w http.ResponseWriter, r *http.Request) {
 	// We can obtain the session token from the requests cookies, which come with every request
 	c, err := r.Cookie("session_token")
 	if err != nil {
@@ -295,7 +300,14 @@ func Welcome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Finally, return the welcome message to the user
-	w.Write([]byte(fmt.Sprintf("Welcome %s!", response)))
+	tmpl := template.Must(template.ParseFiles("/server/upload.html"))
+	files, err := ioutil.ReadDir(uploadPath)
+	if err != nil {
+		renderError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	sfile := lFile{Flist: files}
+	tmpl.Execute(w, sfile)
 }
 
 //Refresh refresh token
@@ -344,6 +356,22 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 		Value:   newSessionToken,
 		Expires: time.Now().Add(120 * time.Second),
 	})
+	http.Redirect(w, r, "/uploadpage", 302)
+}
+
+func clearSession(response http.ResponseWriter) {
+	cookie := &http.Cookie{
+		Name:   "session",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1,
+	}
+	http.SetCookie(response, cookie)
+}
+
+func logoutHandler(response http.ResponseWriter, request *http.Request) {
+	clearSession(response)
+	http.Redirect(response, request, "/", 302)
 }
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
@@ -427,8 +455,9 @@ func main() {
 
 	//session demo
 	r.HandleFunc("/signin", Signin)
-	r.HandleFunc("/welcome", Welcome)
+	r.HandleFunc("/uploadpage", UploadPage)
 	r.HandleFunc("/refresh", Refresh)
+	r.HandleFunc("/logout", logoutHandler).Methods("POST")
 
 	//ChatRoom
 	r.HandleFunc("/chatroom", chatroom)
@@ -543,7 +572,7 @@ func uploadFileHandler() http.HandlerFunc {
 			renderError(w, "CANT_WRITE_FILE", http.StatusInternalServerError)
 			return
 		}
-		w.Write([]byte("<!DOCTYPE html><html><head> <meta http-equiv='refresh' content='5; URL=/'></head><body>SUCCESS<p></p><a href=/>Back to main page</a></body></html>"))
+		w.Write([]byte("<!DOCTYPE html><html><head> <meta http-equiv='refresh' content='5; URL=/uploadpage'></head><body>SUCCESS<p></p><a href=/uploadpage>Back to previous page</a></body></html>"))
 	})
 }
 
