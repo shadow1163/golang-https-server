@@ -26,15 +26,18 @@
         <tr>
           <th>Filename</th>
           <th>Size <small>(bytes)</small></th>
+          <th>Type</th>
           <th>Date Modified</th>
         </tr>
       </thead>
       <tbody>
-          {{range .Flist}}
+          {{range $i, $file := .Flist}}
+          {{$type := index $.Ftype $i}}
           <tr>
-            <td> <a href="/files/{{.Name}}">{{.Name}}</a></td>
-            <td>{{.Size}}</td>
-            <td>{{.ModTime}}</td>
+            <td> <a href="/files/{{$file.Name}}">{{$file.Name}}</a></td>
+            <td>{{$file.Size}}</td>
+            <td>{{$type}}</td>
+            <td>{{$file.ModTime}}</td>
           </tr>
           {{end}}
       </tbody>

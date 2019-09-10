@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -35,6 +36,7 @@ const appFolder = "/server"
 
 type lFile struct {
 	Flist []os.FileInfo
+	Ftype []string
 }
 
 //Credentials Create a struct that models the structure of a user, both in the request body, and in the DB
@@ -306,7 +308,16 @@ func UploadPage(w http.ResponseWriter, r *http.Request) {
 		renderError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	sfile := lFile{Flist: files}
+	var fileType []string
+	for _, file := range files {
+		ext := filepath.Ext(file.Name())
+		if ext == "" {
+			fileType = append(fileType, "unknown")
+		} else {
+			fileType = append(fileType, ext)
+		}
+	}
+	sfile := lFile{Flist: files, Ftype: fileType}
 	tmpl.Execute(w, sfile)
 }
 
@@ -510,7 +521,16 @@ func indexPageHandler() http.HandlerFunc {
 			renderError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		sfile := lFile{Flist: files}
+		var fileType []string
+		for _, file := range files {
+			ext := filepath.Ext(file.Name())
+			if ext == "" {
+				fileType = append(fileType, "unknown")
+			} else {
+				fileType = append(fileType, ext)
+			}
+		}
+		sfile := lFile{Flist: files, Ftype: fileType}
 		tmpl.Execute(w, sfile)
 	})
 }

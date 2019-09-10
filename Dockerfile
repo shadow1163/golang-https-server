@@ -4,7 +4,7 @@ MAINTAINER shadow1163 (674602286@qq.com)
 
 RUN sed -i "s@archive.ubuntu.com@cn.archive.ubuntu.com@g" /etc/apt/sources.list && apt-get update && apt-get install -y software-properties-common
 
-RUN add-apt-repository -y ppa:longsleep/golang-backports
+RUN add-apt-repository -y ppa:longsleep/golang-backports && sed -i "s/ppa\.launchpad\.net/lanuchpad.moruy.cn/g" /etc/apt/sources.list.d/*.list
 
 RUN apt-get update && apt-get install -y --fix-missing golang git redis-server wget unzip
 
