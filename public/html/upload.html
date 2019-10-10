@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Files Server On http</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"/>
+    <meta http-equiv="refresh" content="30;url=/refresh"/>
+    <link href="css/index.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+      <div class="topnav">
+          <a href="/key" target="_blank">MiniGame</a>
+          <a href="/chatroom" target="_blank">Chatroom</a>
+          <a href="#about">About</a>
+        <div class="logout">
+          <form enctype="multipart/form-data" name="uploadForm" method="post" action="/logout">
+            <label>welcome user</label>
+            <input type="submit" value="logout" />
+          </form>
+        </div>
+      </div>
+      <div id="container">
+          <h1>Directory Contents</h1>
+          <table class="sortable">
+            <thead>
+              <tr>
+                <th>Filename</th>
+                <th>Size <small>(bytes)</small></th>
+                <th>Type</th>
+                <th>Date Modified</th>
+              </tr>
+            </thead>
+            <tbody>
+                {{range $i, $file := .Flist}}
+                {{$type := index $.Ftype $i}}
+                <tr>
+                  <td> <a href="/files/{{$file.Name}}">{{$file.Name}}</a></td>
+                  <td>{{$file.Size}}</td>
+                  <td>{{$type}}</td>
+                  <td>{{$file.ModTime}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+          </table>
+        </div>
+    </div>
+    <div class="footer">
+      <form id="upload" name="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+    
+        <fieldset>
+        <legend>HTML File Upload</legend>
+        
+        <input type="hidden" id="MAX_FILE_SIZE" name="MAX_FILE_SIZE" value="300000" />
+        
+        <div>
+            <label for="fileselect">Files to upload:</label>
+            <input type="file" id="uploadFile" name="uploadFile" multiple="multiple" />
+            <div id="filedrag" style="display: block;" >or drop files here</div>
+        </div>
+        
+        <div id="submitbutton">
+            <button type="submit">Upload Files</button>
+        </div>
+        
+        </fieldset>
+        </form>
+    
+        <div id="messages">
+            <p>Status Messages</p>
+        </div>
+      </div>
+        <script src="/js/filedrag.js"></script>
+  </body>
+</html>

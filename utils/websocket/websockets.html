@@ -1,0 +1,34 @@
+<input id="input" type="text" />
+<button onclick="send()">Send</button>
+<pre id="output"></pre>
+<script>
+    var input = document.getElementById("input");
+    var output = document.getElementById("output");
+    var socket = new WebSocket("ws://10.2.2.12:8888/echo");
+
+    socket.onopen = function (e) {
+        output.innerHTML += "Status: Connected\n";
+    };
+
+    socket.onmessage = function (e) {
+        var msg = JSON.parse(e.data);
+        if (msg.Counter === 0) {
+            output.innerHTML += "Server: " + msg.Message + "\n";
+        } else {
+            output.innerHTML += "Total Access Account: " + msg.Counter + "\n";
+        }
+    };
+
+    socket.onclose = function () {
+        output.innerHTML += "Status: closed\n";
+    };
+
+    socket.onerror = function() {
+        output.innerHTML += "Status: Error\n";
+    };
+
+    function send() {
+        socket.send(input.value);
+        input.value = "";
+    }
+</script>

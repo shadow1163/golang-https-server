@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Directory Contents</title>
+  <link rel="stylesheet" href="/css/index.css">
+</head>
+
+<body>
+    <div class="topnav">
+        <a href="/key" target="_blank">MiniGame</a>
+        <a href="/chatroom" target="_blank">Chatroom</a>
+        <a href="#about">About</a>
+        <div class="login-container">
+          <form method="post" action="/signin">
+            <input type="text" placeholder="Username" id="username" name="username">
+            <input type="password" placeholder="Password" id="password" name="password">
+            <button type="submit">Login</button>
+          </form>
+        </div>
+      </div>
+  <div id="container">
+    <h1>Directory Contents</h1>
+    <table class="sortable">
+      <thead>
+        <tr>
+          <th>Filename</th>
+          <th>Size <small>(bytes)</small></th>
+          <th>Type</th>
+          <th>Date Modified</th>
+        </tr>
+      </thead>
+      <tbody>
+          {{range $i, $file := .Flist}}
+          {{$type := index $.Ftype $i}}
+          <tr>
+            <td> <a href="/files/{{$file.Name}}">{{$file.Name}}</a></td>
+            <td>{{$file.Size}}</td>
+            <td>{{$type}}</td>
+            <td>{{$file.ModTime}}</td>
+          </tr>
+          {{end}}
+      </tbody>
+    </table>    
+  </div>
+</body>
+</html>
