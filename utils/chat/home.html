@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Simple Chat</title>
+        <style>
+            *{
+                padding: 0;
+                margin: 0;
+            }
+            body {
+                background-color: white;
+            }
+            .container {
+                display: -webkit-flex;
+                display: flex;
+                position: relative;
+                left: 10%;
+                height: 85vh;
+                width: 80%;
+            }
+            .left {
+                /* border: #111111 solid 1px; */
+                width: 80%;
+                background-color: whitesmoke;
+            }
+            .right {
+                /* text-align: right; */
+                margin:0 auto;
+                /* background-color: beige; */
+                width: 20%;
+            }
+            .sendbox {
+                position:fixed;
+                /* bottom:0; */
+                width: 80%;
+                left: 10%;
+                flex-direction: column;
+                height: 100%;
+                /* background-color: azure; */
+            }
+            .input-eu {
+                position: relative;
+                /* top: 20%; */
+                left: 4%;
+            }
+            .join {
+                position:fixed;
+                right: 50%;
+            }
+            #chat-messages {
+                position: relative;
+                min-height: 10vh;
+                height: 60vh;
+                width: 100%;
+                overflow-y: scroll;
+                left: 2%;
+            }
+            .chip {
+                display: inline-block;
+                height: 32px;
+                font-size: 13px;
+                font-weight: 500;
+                color: rgba(0,0,0,0.6);
+                line-height: 32px;
+                /* padding: 0 12px; */
+                border-radius: 16px;
+                background-color: #e4e4e4;
+                margin-bottom: 5px;
+                margin-right: 5px;
+                text-align:center;
+            }
+            .chip img {
+                float: left;
+                border: 0;
+                border-radius: 16px;
+                height: 100%;
+            }
+            .userlist {
+                position: relative;
+                left: 10%;
+                word-wrap: break-word;
+                list-style: square inside;
+            }
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/md5.js"></script>
+        <script src="https://cdn.jsdelivr.net/emojione/2.2.6/lib/js/emojione.min.js"></script>
+    </head>
+    <body>
+    <div id="app">
+        <div class="container">
+            <div class="left">
+                <div id="chat-messages" class="card-content" v-html="chatContent">
+                </div>
+            </div>
+            <div class="right">
+                <div id="counter"> 
+                </div>
+                <div>
+                    <ul class="userlist">
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="sendbox" v-if="joined">
+                <div class="input-eu">
+                    <input type="text" v-model="newMsg" @keyup.enter="send">
+                </div>
+                <div class="join">
+                    <button class="send" @click="send">
+                        Send
+                    </button>
+                </div>
+            </div>
+        <div class="sendbox" v-if="!joined">
+            <div class="input-eu">
+                <label>Email:</label>
+            </div>
+            <div class="input-eu">
+                <input type="email" v-model.trim="email" placeholder="email" id="email" name="email">
+            </div>
+            <div class="input-eu">
+                <label>Username:</label>
+            </div>
+            <div class="input-eu">
+                <input type="text" v-model.trim="username" placeholder="username" id="username" name="username">
+            </div>
+            <div class="join">
+                <button type="submit" @click="join()">Join</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        new Vue({
+            el: '#app',
+
+            data: {
+                ws: null, // Our websocket
+                newMsg: '', // Holds new messages to be sent to the server
+                chatContent: '', // A running list of chat messages displayed on the screen
+                email: null, // Email address used for grabbing an avatar
+                username: null, // Our username
+                joined: false, // True if email and username have been filled in
+            },
+            created: function() {
+                // var self = this;
+                // this.ws = new WebSocket('ws://' + window.location.host + '/ws');
+                // this.ws.addEventListener('message', function(e) {
+                //     var msg = JSON.parse(e.data);
+                //     if ('Counter' in msg ) {
+                //         var counter = document.getElementById('counter');
+                //         counter.innerText += "Counter " + msg.Counter;
+                //         return;
+                //     }
+                //     self.chatContent += '<div class="chip">'
+                //             + '<img src="' + self.gravatarURL(msg.email) + '">' // Avatar
+                //             + msg.username
+                //         + '</div>'
+                //         + emojione.toImage(msg.message) + '<br/>'; // Parse emojis
+
+                //     var element = document.getElementById('chat-messages');
+                //     element.scrollTop = element.scrollHeight; // Auto scroll to the bottom
+                // });
+            },
+            methods: {
+                send: function () {
+                    if (this.newMsg != '') {
+                        this.ws.send(
+                            JSON.stringify({
+                                email: this.email,
+                                username: this.username,
+                                message:  this.newMsg// Strip out html
+                            }
+                        ));
+                        this.newMsg = ''; // Reset newMsg
+                    }
+                },
+                join: function () {
+                    if (!this.email) {
+                        alert('You must enter an email');
+                        return
+                    }
+                    if (!this.username) {
+                        alert('You must choose a username');
+                        return
+                    }
+                    this.email = email.value;
+                    this.username = username.value;
+                    this.joined = true;
+
+                    var self = this;
+                    this.ws = new WebSocket('ws://' + window.location.host + '/ws');
+                    this.ws.addEventListener('message', function(e) {
+                        var msg = JSON.parse(e.data);
+                        if ('Counter' in msg ) {
+                            var counter = document.getElementById('counter');
+                            counter.innerText = "Counter " + msg.Counter;
+                            return;
+                        }
+                        self.chatContent += '<div class="chip">'
+                            + '<img src="' + self.gravatarURL(msg.email) + '">' // Avatar
+                            + msg.username
+                            + '</div>'
+                            + emojione.toImage(msg.message) + '<br/>'; // Parse emojis
+
+                        var element = document.getElementById('chat-messages');
+                        element.scrollTop = element.scrollHeight; // Auto scroll to the bottom
+                    });
+                },
+                gravatarURL: function(email) {
+                    return 'http://www.gravatar.com/avatar/' + CryptoJS.MD5(email);
+                }
+            }
+        });
+    </script>
+    </body>
+</html>
