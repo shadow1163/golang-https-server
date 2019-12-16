@@ -62,6 +62,7 @@ func main() {
 
 	//ChatRoom
 	r.HandleFunc("/chatroom", chatroom.ChatRoom)
+	r.HandleFunc("/chatroom/counter", chatroom.GetChatRoomCounter).Methods("Get")
 	r.HandleFunc("/ws", chatroom.HandleWSConnections)
 
 	server := &http.Server{

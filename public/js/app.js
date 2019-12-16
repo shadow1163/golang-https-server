@@ -1,4 +1,4 @@
-new Vue({
+var app = new Vue({
     el: '#app',
 
     data: {
@@ -7,7 +7,7 @@ new Vue({
         chatContent: '', // A running list of chat messages displayed on the screen
         email: null, // Email address used for grabbing an avatar
         username: null, // Our username
-        joined: false // True if email and username have been filled in
+        joined: false  // True if email and username have been filled in
     },
     created: function() {
         var self = this;
@@ -53,5 +53,12 @@ new Vue({
         gravatarURL: function(email) {
             return 'http://www.gravatar.com/avatar/' + CryptoJS.MD5(email);
         }
+    }
+});
+
+var counter = new Vue({
+    el: '#counter',
+    data: {
+        Ncounter: 0
     }
 });

@@ -2,6 +2,7 @@ package chatroom
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 	"github.com/shadow1163/logger"
@@ -21,6 +22,10 @@ var (
 	broadcast = make(chan Message)
 )
 
+func init() {
+	go handleMessages()
+}
+
 func ChatRoom(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "public/html/chatroom.html")
 }
@@ -39,11 +44,33 @@ func HandleWSConnections(w http.ResponseWriter, r *http.Request) {
 		// Read in a new message as JSON and map it to a Message object
 		err := ws.ReadJSON(&msg)
 		if err != nil {
-			log.Printf("error: %v", err)
+			log.Debug("error: ", err.Error())
 			delete(clients, ws)
 			break
 		}
 		// Send the newly received message to the broadcast channel
 		broadcast <- msg
+	}
+}
+
+func GetChatRoomCounter(w http.ResponseWriter, r *http.Request) {
+	counter := len(clients)
+
+	w.Write([]byte(strconv.Itoa(counter)))
+}
+
+func handleMessages() {
+	for {
+		// Grab the next message from the broadcast channel
+		msg := <-broadcast
+		// Send it out to every client that is currently connected
+		for client := range clients {
+			err := client.WriteJSON(msg)
+			if err != nil {
+				log.Printf("error: %v", err)
+				client.Close()
+				delete(clients, client)
+			}
+		}
 	}
 }
