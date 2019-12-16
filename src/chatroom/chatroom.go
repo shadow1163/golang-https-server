@@ -54,7 +54,11 @@ func HandleWSConnections(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetChatRoomCounter(w http.ResponseWriter, r *http.Request) {
-	counter := len(clients)
+	counter := 0
+
+	for _ = range clients {
+		counter++
+	}
 
 	w.Write([]byte(strconv.Itoa(counter)))
 }

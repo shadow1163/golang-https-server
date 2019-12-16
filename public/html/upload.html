@@ -76,7 +76,7 @@
 	        function deteleFile(filename) {
 		        // Create a request variable and assign a new XMLHttpRequest object to it.
 		        var request = new XMLHttpRequest();
-            var url = window.location.protocol + "//" + window.location.hostname + "/file/" + filename;
+            var url = window.location.origin + "/file/" + filename;
             console.log(url)
 		        request.open('DELETE', url);
             request.send();

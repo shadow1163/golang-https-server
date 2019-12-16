@@ -60,5 +60,19 @@ var counter = new Vue({
     el: '#counter',
     data: {
         Ncounter: 0
+    },
+    mounted() {
+        this.timer = setInterval(this.getCounter, 5000);
+    },
+    methods: {
+        getCounter: function () {
+            var url = window.location.origin + "/chatroom/counter"
+            console.log(url)
+            axios.get(url)
+            .then(response => {this.Ncounter = response.data})
+        }
+    },
+    beforeDestroy() {
+        clearInterval(this.timer);
     }
 });
