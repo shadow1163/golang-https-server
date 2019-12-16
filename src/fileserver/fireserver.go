@@ -1,12 +1,15 @@
 package fileserver
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/gorilla/mux"
 )
 
 const maxUploadSize = 200 * 1024 * 1024 // 200 mb
@@ -97,4 +100,37 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Write([]byte("<!DOCTYPE html><html><head> <meta http-equiv='refresh' content='5; URL=/uploadpage'></head><body>SUCCESS<p></p><a href=/uploadpage>Back to previous page</a></body></html>"))
+}
+
+func DeleteFile(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)["name"]
+	err := os.Remove(fmt.Sprintf("%s%s", UploadPath, name))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.Write([]byte(fmt.Sprintf("Delete file '%s' success", name)))
+}
+
+func ReceiveFile(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)["name"]
+
+	if _, err := os.Stat(fmt.Sprintf("%s%s", UploadPath, name)); err == nil {
+		http.Error(w, "file exists", http.StatusBadRequest)
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	defer file.Close()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	f, err := os.OpenFile(fmt.Sprintf("%s%s", UploadPath, name), os.O_WRONLY|os.O_CREATE, 0644)
+	defer f.Close()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	io.Copy(f, file)
 }

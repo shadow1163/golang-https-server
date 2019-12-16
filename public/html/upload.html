@@ -27,6 +27,7 @@
                 <th>Size <small>(bytes)</small></th>
                 <th>Type</th>
                 <th>Date Modified</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -37,6 +38,7 @@
                   <td>{{$file.Size}}</td>
                   <td>{{$type}}</td>
                   <td>{{$file.ModTime}}</td>
+                  <td><button value="{{$file.Name}}" onclick="deteleFile(this.value)">detele</button></td>
                 </tr>
                 {{end}}
             </tbody>
@@ -69,5 +71,25 @@
         </div>
       </div>
         <script src="/js/filedrag.js"></script>
+        <script>
+          //delete file
+	        function deteleFile(filename) {
+		        // Create a request variable and assign a new XMLHttpRequest object to it.
+		        var request = new XMLHttpRequest();
+            var url = window.location.protocol + "//" + window.location.hostname + "/file/" + filename;
+            console.log(url)
+		        request.open('DELETE', url);
+            request.send();
+            
+            request.onload = function() {
+              if (request.status != 200) { // analyze HTTP status of the response
+                alert(`Error ${request.status}: ${request.statusText}`); // e.g. 404: Not Found
+              } else { // show the result
+                alert(`Done, Delete success`); // responseText is the server
+                window.location.reload()
+              }
+            };
+	        }
+        </script>
   </body>
 </html>

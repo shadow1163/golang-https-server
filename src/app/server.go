@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"net"
 	"net/http"
 
@@ -14,10 +16,10 @@ import (
 )
 
 var (
-	jsPath    = "public/js/"
-	cssPath   = "public/css/"
-	log       = logger.NewLogger()
-	httpPort  = ":80"
+	jsPath  = "public/js/"
+	cssPath = "public/css/"
+	log     = logger.NewLogger()
+	// httpPort  = ":80"
 	httpsPort = ":443"
 	cert      = "certificate/cert.pem"
 	key       = "certificate/key.pem"
@@ -40,6 +42,14 @@ func redirect(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+
+	httpPortNum := flag.Int("httpPort", 80, "http server port")
+	httpsPortNum := flag.Int("httpsPort", 443, "https server port")
+	httpPort := fmt.Sprintf(":%d", *httpPortNum)
+	httpsPort = fmt.Sprintf(":%d", *httpsPortNum)
+
+	flag.Parse()
+
 	r := mux.NewRouter().StrictSlash(false)
 
 	jsfs := http.FileServer(http.Dir(jsPath))
@@ -50,9 +60,16 @@ func main() {
 	r.HandleFunc("/upload", fileserver.UploadFileHandler)
 	r.HandleFunc("/key", game.MiniGame)
 
+	//static resource
 	r.PathPrefix("/js/").Handler(http.StripPrefix("/js/", jsfs))
 	r.PathPrefix("/css/").Handler(http.StripPrefix("/css/", cssfs))
 	r.PathPrefix("/files/").Handler(http.StripPrefix("/files/", fileserverfs))
+
+	//files API
+	// r.HandleFunc("/file", fileserver.UploadFileHandler).Methods("POST")
+	// r.HandleFunc("/files", fileserver.GetAllFiles).Methods("GET")
+	r.HandleFunc("/file/{name}", fileserver.ReceiveFile).Methods("POST")
+	r.HandleFunc("/file/{name}", fileserver.DeleteFile).Methods("DELETE")
 
 	//session
 	r.HandleFunc("/signin", account.Signin)
