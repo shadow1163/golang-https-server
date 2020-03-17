@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const maxUploadSize = 200 * 1024 * 1024 // 200 mb
+const maxUploadSize = 2 * 1024 * 1024 * 1024 // 2Gb
 
 var (
 	UploadPath = "files/"

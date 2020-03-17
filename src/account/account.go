@@ -1,30 +1,33 @@
 package account
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
-	uuid "github.com/satori/go.uuid"
-
+	"github.com/google/uuid"
+	"github.com/shadow1163/golang-https-server/src/fileserver"
 	"github.com/shadow1163/logger"
-	"github.com/shadow1163/new-server/src/fileserver"
 )
 
 var (
 	user   = []byte("user")
 	passwd = []byte("password")
-	cache  redis.Conn
-	log    = logger.NewLogger()
+	db     DB
+	log    = logger.Log
 )
 
 func init() {
-	conn, err := redis.DialURL("redis://localhost")
-	if err != nil {
-		panic(err)
+	rdb := redisdb{}
+	rdb.connect()
+	if rdb.cache == nil {
+		log.Warning("did not connect redis database, using memory DB")
+		mdb := memorydb{}
+		ex := make(map[string]bool)
+		mdb.Expires = ex
+		db = mdb
+	} else {
+		db = rdb
 	}
-	cache = conn
 }
 
 // Signin sign in
@@ -53,26 +56,21 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a new random session token
-	obj := uuid.NewV4()
-	sessionToken := obj.String()
-	log.Debug(sessionToken)
-	log.Debug(name)
-	// Set the token in the cache, along with the user whom it represents
-	// The token has an expiry time of 120 seconds
-	_, err := cache.Do("SETEX", sessionToken, "120", name)
+	uuid, err := uuid.NewUUID()
 	if err != nil {
-		// If there is an error in setting the cache, return an internal server error
+		// If there is an error in setting the account, return an internal server error
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("<!DOCTYPE html><html><head> <meta http-equiv='refresh' content='5; URL=/'></head><body>Error 500<p></p><a href=/>Back to previous page</a></body></html>"))
 		return
 	}
+	db.save(uuid.String(), true)
 
 	// Finally, we set the client cookie for "session_token" as the session token we just generated
-	// we also set an expiry time of 120 seconds, the same as the cache
+	// we also set an expiry time of 300 seconds
 	http.SetCookie(w, &http.Cookie{
 		Name:    "session_token",
-		Value:   sessionToken,
-		Expires: time.Now().Add(120 * time.Second),
+		Value:   uuid.String(),
+		Expires: time.Now().Add(300 * time.Second),
 	})
 	http.Redirect(w, r, "/uploadpage", 302)
 }
@@ -94,13 +92,13 @@ func UploadPage(w http.ResponseWriter, r *http.Request) {
 	sessionToken := c.Value
 
 	// We then get the name of the user from our cache, where we set the session token
-	response, err := cache.Do("GET", sessionToken)
+	response, err := db.get(sessionToken)
 	if err != nil {
 		// If there is an error fetching from cache, return an internal server error status
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if response == nil {
+	if !response {
 		// If the session token is not present in cache, return an unauthorized error
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -121,28 +119,25 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 	sessionToken := c.Value
 
-	response, err := cache.Do("GET", sessionToken)
+	response, err := db.get(sessionToken)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if response == nil {
+	if !response {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	// The code uptil this point is the same as the first part of the `Welcome` route
-
 	// Now, create a new session token for the current user
-	obj := uuid.NewV4()
-	newSessionToken := obj.String()
-	_, err = cache.Do("SETEX", newSessionToken, "120", fmt.Sprintf("%s", response))
+	uuid, err := uuid.NewUUID()
+	err = db.save(uuid.String(), true)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// Delete the older session token
-	_, err = cache.Do("DEL", sessionToken)
+	err = db.del(sessionToken)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -151,8 +146,8 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 	// Set the new token as the users `session_token` cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:    "session_token",
-		Value:   newSessionToken,
-		Expires: time.Now().Add(120 * time.Second),
+		Value:   uuid.String(),
+		Expires: time.Now().Add(300 * time.Second),
 	})
 	// log.Println(newSessionToken)
 	http.Redirect(w, r, "/uploadpage", 302)

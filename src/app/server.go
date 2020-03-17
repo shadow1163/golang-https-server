@@ -8,17 +8,17 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/shadow1163/golang-https-server/src/account"
+	"github.com/shadow1163/golang-https-server/src/chatroom"
+	"github.com/shadow1163/golang-https-server/src/fileserver"
+	"github.com/shadow1163/golang-https-server/src/game"
 	"github.com/shadow1163/logger"
-	"github.com/shadow1163/new-server/src/account"
-	"github.com/shadow1163/new-server/src/chatroom"
-	"github.com/shadow1163/new-server/src/fileserver"
-	"github.com/shadow1163/new-server/src/game"
 )
 
 var (
 	jsPath  = "public/js/"
 	cssPath = "public/css/"
-	log     = logger.NewLogger()
+	log     = logger.Log
 	// httpPort  = ":80"
 	httpsPort = ":443"
 	cert      = "certificate/cert.pem"
@@ -35,7 +35,7 @@ func redirect(w http.ResponseWriter, req *http.Request) {
 	if len(req.URL.RawQuery) > 0 {
 		target += "?" + req.URL.RawQuery
 	}
-	log.Printf("redirect to: %s", target)
+	log.Debugf("redirect to: %s", target)
 	http.Redirect(w, req, target,
 		// see @andreiavrammsd comment: often 307 > 301
 		http.StatusTemporaryRedirect)
@@ -45,10 +45,11 @@ func main() {
 
 	httpPortNum := flag.Int("httpPort", 80, "http server port")
 	httpsPortNum := flag.Int("httpsPort", 443, "https server port")
+	logLevel := flag.Int("loglevel", 3, "logLevel")
+	flag.Parse()
 	httpPort := fmt.Sprintf(":%d", *httpPortNum)
 	httpsPort = fmt.Sprintf(":%d", *httpsPortNum)
-
-	flag.Parse()
+	log.SetLevel(*logLevel)
 
 	r := mux.NewRouter().StrictSlash(false)
 

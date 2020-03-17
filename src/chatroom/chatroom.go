@@ -16,7 +16,7 @@ type Message struct {
 }
 
 var (
-	log       = logger.NewLogger()
+	log       = logger.Log
 	upgrader  = websocket.Upgrader{}
 	clients   = make(map[*websocket.Conn]bool)
 	broadcast = make(chan Message)
@@ -34,7 +34,8 @@ func HandleWSConnections(w http.ResponseWriter, r *http.Request) {
 	// Upgrade initial GET request to a websocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
+		panic(err.Error())
 	}
 	// Make sure we close the connection when the function returns
 	defer ws.Close()
@@ -44,7 +45,7 @@ func HandleWSConnections(w http.ResponseWriter, r *http.Request) {
 		// Read in a new message as JSON and map it to a Message object
 		err := ws.ReadJSON(&msg)
 		if err != nil {
-			log.Debug("error: ", err.Error())
+			log.Error(err.Error())
 			delete(clients, ws)
 			break
 		}
@@ -71,7 +72,7 @@ func handleMessages() {
 		for client := range clients {
 			err := client.WriteJSON(msg)
 			if err != nil {
-				log.Printf("error: %v", err)
+				log.Errorf("error: %v", err)
 				client.Close()
 				delete(clients, client)
 			}
